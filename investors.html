@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investors | FUREAN Advanced Imaging</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sci: {
+                            base: '#020617',
+                            panel: '#0f172a',
+                            cyan: '#06b6d4',
+                            ember: '#f97316',
+                            dim: '#94a3b8'
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Cinzel', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(to right, #1e293b 1px, transparent 1px), linear-gradient(to bottom, #1e293b 1px, transparent 1px)",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .text-glow { text-shadow: 0 0 10px rgba(6, 182, 212, 0.5); }
+        .text-glow-ember { text-shadow: 0 0 10px rgba(249, 115, 22, 0.5); }
+        .border-glow { box-shadow: 0 0 15px -3px rgba(6, 182, 212, 0.15); }
+        
+        .scanlines {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 40;
+        }
+
+        .hud-corner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 1px solid #06b6d4;
+            transition: all 0.3s ease;
+        }
+        .hud-tl { top: 0; left: 0; border-right: none; border-bottom: none; }
+        .hud-tr { top: 0; right: 0; border-left: none; border-bottom: none; }
+        .hud-bl { bottom: 0; left: 0; border-right: none; border-top: none; }
+        .hud-br { bottom: 0; right: 0; border-left: none; border-top: none; }
+        .hud-danger { border-color: #f97316; }
+
+        .reveal-up {
+            animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #06b6d4; }
+
+        .modal-overlay {
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            transform: scale(0.9) translateY(20px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-sci-base text-slate-300 antialiased overflow-x-hidden">
+
+    <!-- Ambient Background Canvas (3D Particles) -->
+    <div id="canvas-container" class="fixed inset-0 z-0 pointer-events-none opacity-40"></div>
+    
+    <!-- Vignette Overlay -->
+    <div class="fixed inset-0 z-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,#020617_100%)]"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 border-b border-slate-800 bg-sci-base/90 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-6 h-24 flex justify-between items-center">
+            
+            <!-- Branding -->
+            <a href="index.html" class="flex items-center gap-4 group cursor-pointer">
+                <div class="relative w-14 h-14 transition-transform group-hover:scale-105">
+                     <img src="Furean Crest.png" alt="Furean Crest" class="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(6,182,212,0.3)]">
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-serif font-bold text-white tracking-widest text-xl leading-none">FUREAN</span>
+                    <span class="text-[10px] font-mono text-sci-cyan tracking-[0.3em] uppercase mt-1 group-hover:text-white transition-colors">Advanced Imaging</span>
+                </div>
+            </a>
+            
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="index.html#problem" class="text-xs font-mono text-sci-dim hover:text-sci-ember transition-colors tracking-widest uppercase">The Critical Gap</a>
+                <a href="index.html#tech" class="text-xs font-mono text-sci-dim hover:text-sci-cyan transition-colors tracking-widest uppercase">Ecosystem</a>
+                
+                <a href="index.html" class="px-5 py-2 border border-slate-700 bg-slate-900/50 hover:bg-sci-cyan/10 hover:border-sci-cyan text-xs font-mono text-white transition-all duration-300 uppercase tracking-wider group">
+                    <span class="group-hover:text-sci-cyan">Request Information</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
+        <div class="absolute inset-0 bg-grid-pattern bg-[length:50px_50px] opacity-[0.03]"></div>
+        
+        <div class="relative z-10 max-w-5xl mx-auto px-6 text-center">
+            <div class="reveal-up inline-flex items-center gap-3 px-4 py-2 border border-sci-cyan/20 bg-sci-cyan/5 rounded-full mb-8 backdrop-blur-sm">
+                <span class="w-1.5 h-1.5 bg-sci-cyan rounded-full animate-pulse"></span>
+                <span class="font-mono text-[10px] text-sci-cyan tracking-widest uppercase">INVESTMENT OPPORTUNITY // ACTIVE</span>
+            </div>
+
+            <h1 class="reveal-up text-5xl md:text-7xl lg:text-8xl font-bold text-white tracking-tight mb-8 leading-tight font-sans">
+                INVEST IN THE <br />
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-sci-cyan to-blue-600 text-glow">FUTURE OF SAFETY</span>
+            </h1>
+
+            <p class="reveal-up text-lg md:text-xl text-sci-dim max-w-2xl mx-auto font-light leading-relaxed mb-10" style="animation-delay: 0.2s;">
+                Furean Advanced Imaging is revolutionizing industrial safety through military-grade visualization technology. 
+                <span class="text-white">Join us in building the next generation of hazard detection systems.</span>
+            </p>
+        </div>
+    </section>
+
+    <!-- Current Round Section -->
+    <section class="py-32 relative bg-sci-panel/30 border-y border-slate-900">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-16">
+                <div class="max-w-2xl">
+                    <h2 class="text-sci-cyan font-mono text-xs tracking-[0.3em] mb-4">ACTIVE FUNDRAISING</h2>
+                    <h3 class="text-4xl text-white font-bold mb-6 font-serif">Pre-Seed Round</h3>
+                    <p class="text-sci-dim text-lg leading-relaxed mb-6">
+                        We are currently raising capital in our pre-seed round to accelerate product development, expand our engineering team, and establish key partnerships in the industrial safety sector.
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <div class="px-4 py-2 border border-sci-cyan/30 bg-sci-cyan/5 rounded">
+                            <div class="text-xs font-mono text-sci-dim mb-1">ROUND</div>
+                            <div class="text-xl font-bold text-white font-mono">Pre-Seed</div>
+                        </div>
+                        <div class="px-4 py-2 border border-sci-cyan/30 bg-sci-cyan/5 rounded">
+                            <div class="text-xs font-mono text-sci-dim mb-1">STATUS</div>
+                            <div class="text-xl font-bold text-white font-mono">Active</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hidden md:block mt-8 md:mt-0">
+                    <div class="w-32 h-32 border border-sci-cyan/30 rounded-full flex items-center justify-center relative">
+                        <div class="absolute inset-0 border-t-2 border-sci-cyan animate-spin"></div>
+                        <span class="text-sci-cyan font-mono text-3xl font-bold">$</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Investment Details Section -->
+    <section class="py-32 relative">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="mb-16">
+                <h2 class="text-sci-cyan font-mono text-xs tracking-[0.3em] mb-4">INVESTMENT DETAILS</h2>
+                <h3 class="text-4xl text-white font-bold font-serif mb-8">Why Furean?</h3>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="relative group p-8 bg-slate-900/50 border border-slate-800 hover:border-sci-cyan/50 transition duration-500">
+                    <div class="hud-corner hud-tl"></div>
+                    <div class="hud-corner hud-br"></div>
+                    
+                    <div class="text-5xl font-mono font-bold text-white mb-2">$2.5<span class="text-sci-cyan">B</span></div>
+                    <h4 class="text-white font-bold uppercase tracking-wider mb-4">Market Opportunity</h4>
+                    <p class="text-sci-dim text-sm">
+                        The global industrial safety market is projected to reach $2.5B by 2030, driven by increasing regulatory requirements and the transition to complex energy infrastructure.
+                    </p>
+                </div>
+
+                <div class="relative group p-8 bg-slate-900/50 border border-slate-800 hover:border-sci-cyan/50 transition duration-500">
+                    <div class="hud-corner hud-tl"></div>
+                    <div class="hud-corner hud-br"></div>
+                    
+                    <div class="text-5xl font-mono font-bold text-white mb-2">60<span class="text-sci-ember">%</span></div>
+                    <h4 class="text-white font-bold uppercase tracking-wider mb-4">Critical Problem</h4>
+                    <p class="text-sci-dim text-sm">
+                        Over 60% of confined space fatalities are would-be rescuers. Current safety systems are inadequate for next-generation industrial operations.
+                    </p>
+                </div>
+
+                <div class="relative group p-8 bg-slate-900/50 border border-slate-800 hover:border-sci-cyan/50 transition duration-500">
+                    <div class="hud-corner hud-tl"></div>
+                    <div class="hud-corner hud-br"></div>
+                    
+                    <div class="text-5xl font-mono font-bold text-white mb-2">3<span class="text-sci-cyan">X</span></div>
+                    <h4 class="text-white font-bold uppercase tracking-wider mb-4">Competitive Advantage</h4>
+                    <p class="text-sci-dim text-sm">
+                        Our DIAL-LIDAR fusion technology provides 3x better detection accuracy than traditional point sensors, enabling true volumetric hazard mapping.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Investors Section (Placeholder for future logos) -->
+    <section class="hidden py-32 relative bg-sci-panel/30 border-y border-slate-900">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="mb-16 text-center">
+                <h2 class="text-sci-cyan font-mono text-xs tracking-[0.3em] mb-4">OUR INVESTORS</h2>
+                <h3 class="text-4xl text-white font-bold font-serif mb-4">Partners & Backers</h3>
+                <p class="text-sci-dim text-lg max-w-2xl mx-auto">
+                    We're grateful to our early supporters who believe in our mission to revolutionize industrial safety.
+                </p>
+            </div>
+
+            <!-- Placeholder for investor logos -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center">
+                <!-- This section will be populated with investor logos as they come in -->
+                <div class="p-8 border border-slate-800 bg-slate-900/30 rounded text-center">
+                    <div class="text-xs font-mono text-sci-dim uppercase">Investor Logo</div>
+                </div>
+                <div class="p-8 border border-slate-800 bg-slate-900/30 rounded text-center">
+                    <div class="text-xs font-mono text-sci-dim uppercase">Investor Logo</div>
+                </div>
+                <div class="p-8 border border-slate-800 bg-slate-900/30 rounded text-center">
+                    <div class="text-xs font-mono text-sci-dim uppercase">Investor Logo</div>
+                </div>
+                <div class="p-8 border border-slate-800 bg-slate-900/30 rounded text-center">
+                    <div class="text-xs font-mono text-sci-dim uppercase">Investor Logo</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Investor Contact Form Section -->
+    <section class="py-32 relative">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="mb-12 text-center">
+                <h2 class="text-sci-cyan font-mono text-xs tracking-[0.3em] mb-4">INVESTOR INQUIRIES</h2>
+                <h3 class="text-4xl text-white font-bold font-serif mb-4">Get in Touch</h3>
+                <p class="text-sci-dim text-lg max-w-2xl mx-auto">
+                    Interested in learning more about our investment opportunity? Contact our team to schedule a briefing.
+                </p>
+            </div>
+
+            <div class="relative p-8 md:p-12 bg-slate-900/50 border border-slate-800 rounded-lg">
+                <div class="hud-corner hud-tl"></div>
+                <div class="hud-corner hud-tr"></div>
+                <div class="hud-corner hud-bl"></div>
+                <div class="hud-corner hud-br"></div>
+
+                <form id="investorForm" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="investorName" class="block text-xs font-mono text-sci-dim mb-2 uppercase tracking-wider">Name *</label>
+                            <input 
+                                type="text" 
+                                id="investorName" 
+                                name="name" 
+                                required
+                                class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 text-white font-mono text-sm focus:outline-none focus:border-sci-cyan transition-colors"
+                                placeholder="Your name"
+                            >
+                        </div>
+
+                        <div>
+                            <label for="investorEmail" class="block text-xs font-mono text-sci-dim mb-2 uppercase tracking-wider">Email *</label>
+                            <input 
+                                type="email" 
+                                id="investorEmail" 
+                                name="email" 
+                                required
+                                class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 text-white font-mono text-sm focus:outline-none focus:border-sci-cyan transition-colors"
+                                placeholder="your.email@company.com"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="investorCompany" class="block text-xs font-mono text-sci-dim mb-2 uppercase tracking-wider">Firm / Organization *</label>
+                            <input 
+                                type="text" 
+                                id="investorCompany" 
+                                name="company" 
+                                required
+                                class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 text-white font-mono text-sm focus:outline-none focus:border-sci-cyan transition-colors"
+                                placeholder="Investment firm or organization"
+                            >
+                        </div>
+
+                        <div>
+                            <label for="investorRole" class="block text-xs font-mono text-sci-dim mb-2 uppercase tracking-wider">Role *</label>
+                            <input 
+                                type="text" 
+                                id="investorRole" 
+                                name="role" 
+                                required
+                                class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 text-white font-mono text-sm focus:outline-none focus:border-sci-cyan transition-colors"
+                                placeholder="Your role/title"
+                            >
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="investorMessage" class="block text-xs font-mono text-sci-dim mb-2 uppercase tracking-wider">Message *</label>
+                        <textarea 
+                            id="investorMessage" 
+                            name="message" 
+                            required
+                            rows="5"
+                            class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 text-white font-mono text-sm focus:outline-none focus:border-sci-cyan transition-colors resize-none"
+                            placeholder="Tell us about your interest in investing..."
+                        ></textarea>
+                    </div>
+
+                    <div class="flex gap-4 pt-4">
+                        <button 
+                            type="submit" 
+                            class="flex-1 px-6 py-3 bg-sci-cyan text-black font-bold text-sm tracking-widest uppercase hover:bg-white transition-colors duration-300 font-mono"
+                        >
+                            <span id="investorSubmitText">Submit Inquiry</span>
+                            <span id="investorSubmitLoading" class="hidden">TRANSMITTING...</span>
+                        </button>
+                    </div>
+
+                    <div id="investorFormMessage" class="hidden mt-4 p-4 border font-mono text-sm">
+                        <span id="investorFormMessageText"></span>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-sci-base border-t border-slate-800 pt-24 pb-12">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between items-start gap-12">
+                <div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-8 h-8 opacity-80">
+                             <img src="Furean Crest.png" alt="Furean Crest" class="w-full h-full object-contain">
+                        </div>
+                        <div class="text-2xl font-bold text-white tracking-tighter font-serif">FUREAN</div>
+                    </div>
+                    <div class="text-xs font-mono text-sci-dim max-w-xs">
+                        Defining the standard for industrial safety in hostile environments.<br><br>
+                        "Ordo Vigiliarum"
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-12">
+                    <div>
+                        <h4 class="text-white text-sm font-bold mb-4 uppercase tracking-widest">Platform</h4>
+                        <ul class="space-y-2 text-xs font-mono text-sci-dim">
+                            <li><a href="platform.html#hardware" class="hover:text-sci-cyan transition">Hardware</a></li>
+                            <li><a href="platform.html#software" class="hover:text-sci-cyan transition">Software</a></li>
+                            <li><a href="platform.html#ar" class="hover:text-sci-cyan transition">Augmented Reality</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-white text-sm font-bold mb-4 uppercase tracking-widest">Company</h4>
+                        <ul class="space-y-2 text-xs font-mono text-sci-dim">
+                            <li><a href="index.html" class="hover:text-sci-cyan transition">Contact</a></li>
+                            <li><a href="investors.html" class="hover:text-sci-cyan transition">Investors</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-24 pt-8 border-t border-slate-900 flex justify-between items-center text-[10px] font-mono text-slate-600">
+                <div>© 2025 FUREAN ADVANCED IMAGING.</div>
+                <div>SECURE CONNECTION ESTABLISHED</div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Three.js Background Script -->
+    <script>
+        const initCanvas = () => {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 300; 
+            
+            const posArray = new Float32Array(particlesCount * 3);
+            
+            for(let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 15;
+            }
+
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.03,
+                color: 0x06b6d4, 
+                transparent: true,
+                opacity: 0.4,
+            });
+            
+            const particlesMesh = new THREE.Points(particlesGeometry, material);
+            scene.add(particlesMesh);
+
+            camera.position.z = 3;
+
+            let mouseX = 0;
+            let mouseY = 0;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = event.clientX / window.innerWidth - 0.5;
+                mouseY = event.clientY / window.innerHeight - 0.5;
+            });
+
+            const animate = () => {
+                requestAnimationFrame(animate);
+                particlesMesh.rotation.y += 0.0005;
+                particlesMesh.rotation.x += 0.0002;
+                particlesMesh.rotation.y += mouseX * 0.01;
+                particlesMesh.rotation.x += mouseY * 0.01;
+                renderer.render(scene, camera);
+            };
+
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+
+        window.onload = initCanvas;
+    </script>
+
+    <!-- Investor Form JavaScript -->
+    <script>
+        const investorForm = document.getElementById('investorForm');
+        const investorSubmitText = document.getElementById('investorSubmitText');
+        const investorSubmitLoading = document.getElementById('investorSubmitLoading');
+        const investorFormMessage = document.getElementById('investorFormMessage');
+        const investorFormMessageText = document.getElementById('investorFormMessageText');
+
+        investorForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            investorSubmitText.classList.add('hidden');
+            investorSubmitLoading.classList.remove('hidden');
+            investorFormMessage.classList.add('hidden');
+
+            const formData = {
+                name: document.getElementById('investorName').value,
+                email: document.getElementById('investorEmail').value,
+                company: document.getElementById('investorCompany').value,
+                role: document.getElementById('investorRole').value,
+                message: document.getElementById('investorMessage').value,
+                type: 'investor' // Mark as investor inquiry
+            };
+
+            try {
+                const response = await fetch('/api/contact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    investorFormMessage.classList.remove('hidden');
+                    investorFormMessage.classList.remove('border-sci-ember', 'bg-sci-ember/10', 'text-sci-ember');
+                    investorFormMessage.classList.add('border-sci-cyan', 'bg-sci-cyan/10', 'text-sci-cyan');
+                    investorFormMessageText.textContent = '✓ MESSAGE TRANSMITTED SUCCESSFULLY. We will respond shortly.';
+                    investorForm.reset();
+                } else {
+                    throw new Error(result.error || 'Failed to send message');
+                }
+            } catch (error) {
+                investorFormMessage.classList.remove('hidden');
+                investorFormMessage.classList.remove('border-sci-cyan', 'bg-sci-cyan/10', 'text-sci-cyan');
+                investorFormMessage.classList.add('border-sci-ember', 'bg-sci-ember/10', 'text-sci-ember');
+                investorFormMessageText.textContent = `⚠ ERROR: ${error.message}. Please try again or contact mark@fureanimaging.com directly.`;
+            } finally {
+                investorSubmitText.classList.remove('hidden');
+                investorSubmitLoading.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
+

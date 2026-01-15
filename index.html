@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FUREAN | Advanced Imaging</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Added Cinzel for that "Crest/Furean" serif look, paired with technical fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sci: {
+                            base: '#020617',    // Deepest Slate
+                            panel: '#0f172a',   // Lighter Slate
+                            cyan: '#06b6d4',    // Electric Blue/Cyan (Safety/Safe)
+                            ember: '#f97316',   // Warning Orange (Danger/Problem)
+                            dim: '#94a3b8'      // Muted Text
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Cinzel', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(to right, #1e293b 1px, transparent 1px), linear-gradient(to bottom, #1e293b 1px, transparent 1px)",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Sci-Fi Glow Effects */
+        .text-glow { text-shadow: 0 0 10px rgba(6, 182, 212, 0.5); }
+        .text-glow-ember { text-shadow: 0 0 10px rgba(249, 115, 22, 0.5); }
+        
+        .border-glow { box-shadow: 0 0 15px -3px rgba(6, 182, 212, 0.15); }
+        
+        /* CRT Scanline Effect Overlay */
+        .scanlines {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 40;
+        }
+
+        /* HUD Corner Brackets */
+        .hud-corner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 1px solid #06b6d4;
+            transition: all 0.3s ease;
+        }
+        .hud-tl { top: 0; left: 0; border-right: none; border-bottom: none; }
+        .hud-tr { top: 0; right: 0; border-left: none; border-bottom: none; }
+        .hud-bl { bottom: 0; left: 0; border-right: none; border-top: none; }
+        .hud-br { bottom: 0; right: 0; border-left: none; border-top: none; }
+
+        /* Danger HUD Corners (Orange) */
+        .hud-danger { border-color: #f97316; }
+
+        /* Smooth reveal for content */
+        .reveal-up {
+            animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #06b6d4; }
+
+        /* Scroll animation for ticker */
+        @keyframes scroll-left {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            transform: scale(0.9) translateY(20px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-sci-base text-slate-300 antialiased overflow-x-hidden">
+
+    <!-- Ambient Background Canvas (3D Particles) -->
+    <div id="canvas-container" class="fixed inset-0 z-0 pointer-events-none opacity-40"></div>
+    
+    <!-- Vignette Overlay -->
+    <div class="fixed inset-0 z-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,#020617_100%)]"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 border-b border-slate-800 bg-sci-base/90 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-6 h-24 flex justify-between items-center">
+            
+            <!-- Branding -->
+            <div class="flex items-center gap-4 group cursor-pointer">
+                <!-- LOGO IMAGE: Ensure 'Furean Crest.png' is in the same folder -->
+                <div class="relative w-14 h-14 transition-transform group-hover:scale-105">
+                     <img src="Furean Crest.png" alt="Furean Crest" class="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(6,182,212,0.3)]">
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-serif font-bold text-white tracking-widest text-xl leading-none">FUREAN</span>
+                    <span class="text-[10px] font-mono text-sci-cyan tracking-[0.3em] uppercase mt-1 group-hover:text-white transition-colors">Advanced Imaging</span>
+                </div>
+            </div>
+            
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="#problem" class="text-xs font-mono text-sci-dim hover:text-sci-ember transition-colors tracking-widest uppercase">The Critical Gap</a>
+                <a href="#tech" class="text-xs font-mono text-sci-dim hover:text-sci-cyan transition-colors tracking-widest uppercase">Ecosystem</a>
+                
+                <button id="contactBtn" class="px-5 py-2 border border-slate-700 bg-slate-900/50 hover:bg-sci-cyan/10 hover:border-sci-cyan text-xs font-mono text-white transition-all duration-300 uppercase tracking-wider group">
+                    <span class="group-hover:text-sci-cyan">Request Information</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
+        <!-- Grid Background -->
+        <div class="absolute inset-0 bg-grid-pattern bg-[length:50px_50px] opacity-[0.03]"></div>
+        
+        <div class="relative z-10 max-w-5xl mx-auto px-6 text-center">
+            
+            <!-- Latin Motto Watermark -->
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -z-10 opacity-5 pointer-events-none whitespace-nowrap">
+                <span class="font-serif text-[10rem] md:text-[15rem] font-bold text-white">ORDO VIGILIARUM</span>
+            </div>
+
+            <div class="reveal-up inline-flex items-center gap-3 px-4 py-2 border border-sci-cyan/20 bg-sci-cyan/5 rounded-full mb-8 backdrop-blur-sm">
+                <span class="w-1.5 h-1.5 bg-sci-cyan rounded-full animate-pulse box-shadow-glow"></span>
+                <span class="font-mono text-[10px] text-sci-cyan tracking-widest uppercase">System Status: Active // V.3.1</span>
+            </div>
+
+            <h1 class="reveal-up text-5xl md:text-7xl lg:text-8xl font-bold text-white tracking-tight mb-8 leading-tight font-sans">
+                NEXT GENERATION VISUALIZATION <br />
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-sci-cyan to-blue-600 text-glow">FOR NEXT GENERATION INDUSTRY</span>
+            </h1>
+
+            <p class="reveal-up text-lg md:text-xl text-sci-dim max-w-2xl mx-auto font-light leading-relaxed mb-10" style="animation-delay: 0.2s;">
+                Furean Advanced Imaging brings military-grade situational awareness to the industrial sector. 
+                <span class="text-white">Enabling high-fidelity hazard detection and operational visualization</span>
+            </p>
+
+            <div class="reveal-up flex flex-col sm:flex-row justify-center gap-4" style="animation-delay: 0.4s;">
+                <a href="#problem" class="px-8 py-4 bg-sci-cyan text-black font-bold text-sm tracking-widest uppercase hover:bg-white transition-colors duration-300 relative overflow-hidden group flex items-center justify-center">
+                    <span class="relative z-10">Why Furean?</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Data Stream Ticker -->
+        <div class="absolute bottom-0 w-full h-16 border-t border-slate-800 bg-sci-base/90 backdrop-blur flex items-center overflow-hidden z-20">
+            <div class="flex gap-12 animate-[scroll-left_40s_linear_infinite] px-4 whitespace-nowrap">
+                <div class="flex items-center gap-2 text-xs font-mono text-sci-dim">
+                    <span class="text-sci-ember">⚠ SECTOR ALERT</span> <span>CRITICAL MINERALS EXPANSION</span>
+                </div>
+                <div class="flex items-center gap-2 text-xs font-mono text-sci-dim">
+                    <span class="text-sci-cyan">► SYSTEM</span> <span>Imaging System Initialized</span>
+                </div>
+                <div class="flex items-center gap-2 text-xs font-mono text-sci-dim">
+                    <span class="text-sci-dim">/// PROTOCOL</span> <span>ORDO VIGILIARUM</span>
+                </div>
+                 <div class="flex items-center gap-2 text-xs font-mono text-sci-dim">
+                    <span class="text-sci-ember">⚠ STATISTICS</span> <span>60% OF FATALITIES ARE RESCUERS</span>
+                </div>
+                 <div class="flex items-center gap-2 text-xs font-mono text-sci-dim">
+                    <span class="text-sci-cyan">► DATA</span> <span>VOLUMETRIC ANALYSIS ACTIVE</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- THE PROBLEM SECTION (The Void) -->
+    <section id="problem" class="py-32 relative bg-sci-panel/30 border-y border-slate-900">
+        <div class="max-w-7xl mx-auto px-6">
+            
+            <div class="flex flex-col md:flex-row justify-between items-end mb-16">
+                <div class="max-w-2xl">
+                    <h2 class="text-sci-ember font-mono text-xs tracking-[0.3em] mb-4">THE OPERATIONAL VOID</h2>
+                    <h3 class="text-4xl text-white font-bold mb-6 font-serif">The Cost of Blindness</h3>
+                    <p class="text-sci-dim text-lg leading-relaxed">
+                        As critical sectors, from Oil and Gas, to Mining, to Space Exploration expand for the future, project complexity is increasing, while timelines become tighter. A new operational visualization system for coordination of assets and hazard mitigation is needed.
+                    </p>
+                </div>
+                <!-- Warning Graphic -->
+                <div class="hidden md:block">
+                    <div class="w-32 h-32 border border-sci-ember/30 rounded-full flex items-center justify-center relative">
+                        <div class="absolute inset-0 border-t-2 border-sci-ember animate-spin"></div>
+                        <span class="text-sci-ember font-mono text-3xl font-bold">!</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Problem Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                
+                <!-- Problem 1: Rescuer Deaths -->
+                <div class="relative group p-8 bg-slate-900/50 border border-slate-800 hover:border-sci-ember/50 transition duration-500">
+                    <div class="hud-corner hud-danger hud-tl"></div>
+                    <div class="hud-corner hud-danger hud-br"></div>
+                    
+                    <div class="text-5xl font-mono font-bold text-white mb-2">60<span class="text-sci-ember">%</span></div>
+                    <h4 class="text-white font-bold uppercase tracking-wider mb-4">The Rescuer Trap</h4>
+                    <p class="text-sci-dim text-sm">
+                        According to NIOSH, over 60% of confined space fatalities are would-be rescuers entering blindly to save a colleague. Without visibility, rescue becomes a casualty event.
+                    </p>
+                </div>
+
+                <!-- Problem 2: The Manual Watch -->
+                <div class="relative group p-8 bg-slate-900/50 border border-slate-800 hover:border-sci-ember/50 transition duration-500">
+                    <div class="hud-corner hud-danger hud-tl"></div>
+                    <div class="hud-corner hud-danger hud-br"></div>
+                    
+                    <div class="text-5xl font-mono font-bold text-white mb-2">1<span class="text-sci-ember">:</span>1</div>
+                    <h4 class="text-white font-bold uppercase tracking-wider mb-4">The Human Limit</h4>
+                    <p class="text-sci-dim text-sm">
+                        Traditional "Confined Space Attendant" requires one person watching one confined space. It creates a massive labour overheaed, while limited visibility and archaic hazard detection methods fall short of what's needed for a 21st century economy.
+                    </p>
+                </div>
+
+                <!-- Problem 3: Single Point Failure -->
+                <div class="relative group p-8 bg-slate-900/50 border border-slate-800 hover:border-sci-ember/50 transition duration-500">
+                    <div class="hud-corner hud-danger hud-tl"></div>
+                    <div class="hud-corner hud-danger hud-br"></div>
+                    
+                    <div class="text-5xl font-mono font-bold text-white mb-2">0<span class="text-sci-ember">D</span></div>
+                    <h4 class="text-white font-bold uppercase tracking-wider mb-4">Point vs. Volume</h4>
+                    <p class="text-sci-dim text-sm">
+                        Current sensors only detect gas <em>at the device</em>. They cannot see the gas cloud five feet away. Furean moves from "Point Detection" to "Volumetric Mapping."
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Grid Section -->
+    <section id="tech" class="py-32 relative">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-16 border-b border-slate-800 pb-8">
+                <div>
+                    <h2 class="text-sci-cyan font-mono text-xs tracking-[0.3em] mb-4">SECTOR 02 // HARDWARE</h2>
+                    <h3 class="text-4xl text-white font-bold font-serif">The Furean Ecosystem</h3>
+                </div>
+                <div class="font-mono text-xs text-sci-dim mt-4 md:mt-0 text-right">
+                    <p>ARCH: FUREAN_MESH_V3</p>
+                    <p>STATUS: DEPLOYABLE</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Card 1: The Sensor (Wide) -->
+                <div class="lg:col-span-8 relative group cursor-crosshair">
+                    <div class="absolute inset-0 bg-sci-cyan/5 rounded border border-sci-cyan/20 group-hover:border-sci-cyan/50 transition-colors duration-500"></div>
+                    
+                    <!-- HUD Corners -->
+                    <div class="hud-corner hud-tl group-hover:w-8 group-hover:h-8"></div>
+                    <div class="hud-corner hud-tr group-hover:w-8 group-hover:h-8"></div>
+                    <div class="hud-corner hud-bl group-hover:w-8 group-hover:h-8"></div>
+                    <div class="hud-corner hud-br group-hover:w-8 group-hover:h-8"></div>
+
+                    <div class="relative p-8 h-96 flex flex-col justify-between overflow-hidden">
+                        <!-- Background Image for Card -->
+                        <div class="absolute inset-0 z-0">
+                            <!-- Placeholder for Sensor Render -->
+                            <img src="A_visualization_of_202511292148.jpeg" class="w-full h-full object-cover opacity-40 mix-blend-luminosity transition duration-700 group-hover:scale-105 group-hover:opacity-60" alt="Sensor">
+                            <div class="absolute inset-0 bg-gradient-to-r from-sci-base via-sci-base/80 to-transparent"></div>
+                        </div>
+
+                        <div class="relative z-10 max-w-md">
+                            <div class="font-mono text-sci-cyan text-xs mb-2">01 // PERCEPTION</div>
+                            <h4 class="text-2xl text-white font-bold mb-4">Hyperspectral Imaging</h4>
+                            <p class="text-sci-dim text-sm leading-relaxed">
+                                By combining 3-dimensional imaging with hyperspectral gas detection, the Furean system 
+                                allows operators to monitor workers in confined spaces, while providing real time, volumetric gas detection and atmospherical sampling.
+                            </p>
+                        </div>
+                        
+                        <div class="relative z-10 flex gap-4 font-mono text-[10px] text-sci-dim border-t border-slate-700 pt-4 mt-4">
+                            <span>WAVELENGTH: 950NM</span>
+                            <span class="text-slate-600">|</span>
+                            <span>Class 1 Division 1 Intrinsically Safe</span>
+                            <span class="text-slate-600">|</span>
+                            <span>IP69K RATED</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: The AR (Tall) -->
+                <div class="lg:col-span-4 relative group">
+                    <div class="absolute inset-0 bg-slate-900 rounded border border-slate-800 group-hover:border-sci-ember/50 transition-colors duration-500"></div>
+                    
+                    <div class="relative p-8 h-96 flex flex-col">
+                        <div class="absolute inset-0 z-0 overflow-hidden">
+                            <!-- AR Glasses -->
+                             <img src="A_pair_of_2k_202512230301.jpeg" class="w-full h-full object-cover opacity-30 mix-blend-lighten transition duration-700 group-hover:scale-110" alt="AR">
+                             <div class="absolute inset-0 bg-gradient-to-t from-sci-base via-transparent to-transparent"></div>
+                        </div>
+
+                        <div class="relative z-10 mt-auto">
+                            <div class="font-mono text-sci-ember text-xs mb-2">02 // VISUALIZATION</div>
+                            <h4 class="text-xl text-white font-bold mb-2">Augmented Reality Visualization</h4>
+                            <p class="text-sci-dim text-xs leading-relaxed mb-4">
+                                A next generation industrial vision system allows field operators and rescuers unprecedented situational awareness in the field.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: C3 (Full Width) -->
+                <div class="lg:col-span-12 relative group mt-6">
+                    <div class="absolute inset-0 bg-slate-900 rounded border border-slate-800 group-hover:border-white/20 transition-colors"></div>
+                    <div class="relative p-8 md:p-12 flex flex-col md:flex-row items-center gap-12 overflow-hidden">
+                        
+                        <!-- Content -->
+                        <div class="flex-1 relative z-10 order-2 md:order-1">
+                            <div class="font-mono text-sci-dim text-xs mb-2">03 // COMMAND & CONTROL</div>
+                            <h4 class="text-3xl text-white font-bold mb-4">The Mobile C3 Unit</h4>
+                            <p class="text-sci-dim text-sm max-w-xl mb-6">
+                                A custom designed, blast resistant, mobile command and control centre carries a mobile data center, allowing for swift system deployment in even the most hazardous environments.
+                            </p>
+                            <div class="flex gap-2">
+                                <span class="px-2 py-1 border border-slate-700 text-[10px] text-white font-mono uppercase">Blast Resistant</span>
+                                <span class="px-2 py-1 border border-slate-700 text-[10px] text-white font-mono uppercase">Mobile Data Center</span>
+                            </div>
+                        </div>
+
+                        <!-- Graphic -->
+                        <div class="flex-1 w-full h-64 bg-black relative z-10 order-1 md:order-2 border border-slate-800 group-hover:border-sci-cyan/30 transition-colors">
+                            <!-- Truck Video -->
+                            <video src="Slow_cinematic_camera_202509172312.mp4" class="w-full h-full object-cover opacity-80" autoplay loop muted playsinline alt="Furean C3 Trailer"></video>
+                            <!-- Overlay Grid -->
+                            <div class="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(6,182,212,0.05)_50%,transparent_75%)] bg-[length:250%_250%] hover:bg-right transition-all duration-1000"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Simulation Interface (The "Digital Twin") -->
+    <section id="interface" class="relative py-0 min-h-screen bg-black border-y border-slate-800 overflow-hidden">
+        
+        <!-- Scanline Overlay -->
+        <div class="absolute inset-0 scanlines pointer-events-none"></div>
+
+        <!-- Background Image (The Refinery Point Cloud) -->
+        <div class="absolute inset-0 opacity-40">
+            <img src="A_storage_tank_2k_202512220253.jpeg" class="w-full h-full object-cover grayscale brightness-50 contrast-125" alt="Point Cloud">
+        </div>
+
+        <!-- UI Overlay -->
+        <div class="relative z-10 h-screen w-full p-6 md:p-12 flex flex-col justify-between pointer-events-none">
+            
+            <!-- Top Bar -->
+            <div class="flex justify-between items-start">
+                <div class="bg-black/80 backdrop-blur border-l-2 border-sci-cyan p-4">
+                    <div class="text-xs font-mono text-sci-cyan mb-1">LIVE FEED // CAM_04</div>
+                    <div class="text-2xl font-bold text-white tracking-widest font-sans">TANK 4-ALPHA</div>
+                </div>
+                <div class="flex flex-col gap-2 items-end">
+                    <div class="text-sci-ember font-mono text-xs animate-pulse">● RECORDING</div>
+                    <div class="text-slate-500 font-mono text-[10px]">LATENCY: 4MS</div>
+                </div>
+            </div>
+
+            <!-- Central Target -->
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                <div class="w-[500px] h-[500px] border border-white/5 rounded-full flex items-center justify-center">
+                    <div class="w-[400px] h-[400px] border border-white/10 rounded-full border-dashed animate-[spin_60s_linear_infinite]"></div>
+                </div>
+            </div>
+
+            <!-- Floating Data Tags -->
+            <div class="absolute top-1/3 left-1/4 bg-black/60 border border-sci-ember/50 p-2 backdrop-blur-sm">
+                 <div class="text-[10px] font-mono text-sci-ember font-bold">⚠ H2S POCKET DETECTED</div>
+                 <div class="h-1 w-full bg-slate-800 mt-1"><div class="h-full w-3/4 bg-sci-ember"></div></div>
+            </div>
+
+            <div class="absolute bottom-1/3 right-1/4 bg-black/60 border border-sci-cyan/50 p-2 backdrop-blur-sm">
+                 <div class="text-[10px] font-mono text-sci-cyan font-bold">PERSONNEL TRACKING</div>
+                 <div class="text-[9px] text-white font-mono">ID: 9482-A (SAFE)</div>
+            </div>
+
+            <!-- Bottom Bar -->
+            <div class="flex justify-between items-end border-t border-white/10 pt-6">
+                <div class="font-mono text-xs text-slate-500 max-w-xs">
+                    DIGITAL TWIN RENDERER<br>
+                    RESOLUTION: 4K<br>
+                    REFRESH: 120HZ
+                </div>
+                <div class="flex gap-1">
+                    <div class="w-12 h-1 bg-sci-cyan"></div>
+                    <div class="w-2 h-1 bg-sci-cyan/50"></div>
+                    <div class="w-2 h-1 bg-sci-cyan/20"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-sci-base border-t border-slate-800 pt-24 pb-12">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between items-start gap-12">
+                <div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-8 h-8 opacity-80">
+                             <img src="Furean Crest.png" alt="Furean Crest" class="w-full h-full object-contain">
+                        </div>
+                        <div class="text-2xl font-bold text-white tracking-tighter font-serif">FUREAN</div>
+                    </div>
+                    <div class="text-xs font-mono text-sci-dim max-w-xs">
+                        Defining the standard for industrial safety in hostile environments.<br><br>
+                        "Ordo Vigiliarum"
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-12">
+                    <div>
+                        <h4 class="text-white text-sm font-bold mb-4 uppercase tracking-widest">Platform</h4>
+                        <ul class="space-y-2 text-xs font-mono text-sci-dim">
+                            <li><a href="platform.html#hardware" class="hover:text-sci-cyan transition">Hardware</a></li>
+                            <li><a href="platform.html#software" class="hover:text-sci-cyan transition">Software</a></li>
+                            <li><a href="platform.html#ar" class="hover:text-sci-cyan transition">Augmented Reality</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-white text-sm font-bold mb-4 uppercase tracking-widest">Company</h4>
+                        <ul class="space-y-2 text-xs font-mono text-sci-dim">
+                            <li><button id="contactBtnFooter" class="hover:text-sci-cyan transition text-left">Contact</button></li>
+                            <li><a href="investors.html" class="hover:text-sci-cyan transition">Investors</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-24 pt-8 border-t border-slate-900 flex justify-between items-center text-[10px] font-mono text-slate-600">
+                <div>© 2025 FUREAN ADVANCED IMAGING.</div>
+                <div>SECURE CONNECTION ESTABLISHED</div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Three.js Background Script -->
+    <script>
+        const initCanvas = () => {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            // Particles - Network Mesh style
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 300; 
+            
+            const posArray = new Float32Array(particlesCount * 3);
+            
+            for(let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 15;
+            }
+
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.03,
+                color: 0x06b6d4, 
+                transparent: true,
+                opacity: 0.4,
+            });
+            
+            const particlesMesh = new THREE.Points(particlesGeometry, material);
+            scene.add(particlesMesh);
+
+            camera.position.z = 3;
+
+            // Mouse interaction
+            let mouseX = 0;
+            let mouseY = 0;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = event.clientX / window.innerWidth - 0.5;
+                mouseY = event.clientY / window.innerHeight - 0.5;
+            });
+
+            const animate = () => {
+                requestAnimationFrame(animate);
+                particlesMesh.rotation.y += 0.0005;
+                particlesMesh.rotation.x += 0.0002;
+                particlesMesh.rotation.y += mouseX * 0.01;
+                particlesMesh.rotation.x += mouseY * 0.01;
+                renderer.render(scene, camera);
+            };
+
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+
+        window.onload = initCanvas;
+    </script>
+
+    <!-- Contact Form Modal -->
+    <div id="contactModal" class="modal-overlay fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="modal-content relative w-full max-w-2xl bg-sci-panel border border-slate-700 rounded-lg overflow-hidden">
+            <!-- HUD Corners -->
+            <div class="hud-corner hud-tl"></div>
+            <div class="hud-corner hud-tr"></div>
+            <div class="hud-corner hud-bl"></div>
+            <div class="hud-corner hud-br"></div>
+
+            <!-- Close Button -->
+            <button id="closeModal" class="absolute top-4 right-4 text-sci-dim hover:text-white transition-colors z-10">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+
+            <!-- Form Content -->
+            <div class="p-8 md:p-12">
+                <div class="mb-8">
+                    <div class="font-mono text-sci-cyan text-xs mb-2 tracking-widest uppercase">COMMUNICATION PROTOCOL</div>
+                    <h2 class="text-3xl text-white font-bold font-serif mb-2">Request Information</h2>
+                    <p class="text-sci-dim text-sm">Submit your inquiry and our team will respond promptly.</p>
+                </div>
+
+                <form id="contactForm" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Name Field -->
+                        <div>
+                            <label for="name" class="block text-xs font-mono text-sci-dim mb-2 uppercase tracking-wider">Name *</label>
+                            <input 
+                                type="text" 
+                                id="name" 
+                                name="name" 
+                                required
+                                class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 text-white font-mono text-sm focus:outline-none focus:border-sci-cyan transition-colors"
+                                placeholder="Enter your name"
+                            >
+                        </div>
+
+                        <!-- Company Field -->
+                        <div>
+                            <label for="company" class="block text-xs font-mono text-sci-dim mb-2 uppercase tracking-wider">Company *</label>
+                            <input 
+                                type="text" 
+                                id="company" 
+                                name="company" 
+                                required
+                                class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 text-white font-mono text-sm focus:outline-none focus:border-sci-cyan transition-colors"
+                                placeholder="Company name"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Role Field -->
+                    <div>
+                        <label for="role" class="block text-xs font-mono text-sci-dim mb-2 uppercase tracking-wider">Role *</label>
+                        <input 
+                            type="text" 
+                            id="role" 
+                            name="role" 
+                            required
+                            class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 text-white font-mono text-sm focus:outline-none focus:border-sci-cyan transition-colors"
+                            placeholder="Your role/title"
+                        >
+                    </div>
+
+                    <!-- Email Field -->
+                    <div>
+                        <label for="email" class="block text-xs font-mono text-sci-dim mb-2 uppercase tracking-wider">Email *</label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            required
+                            class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 text-white font-mono text-sm focus:outline-none focus:border-sci-cyan transition-colors"
+                            placeholder="your.email@company.com"
+                        >
+                    </div>
+
+                    <!-- Message Field -->
+                    <div>
+                        <label for="message" class="block text-xs font-mono text-sci-dim mb-2 uppercase tracking-wider">Message *</label>
+                        <textarea 
+                            id="message" 
+                            name="message" 
+                            required
+                            rows="5"
+                            class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 text-white font-mono text-sm focus:outline-none focus:border-sci-cyan transition-colors resize-none"
+                            placeholder="Tell us about your inquiry..."
+                        ></textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="flex gap-4 pt-4">
+                        <button 
+                            type="submit" 
+                            class="flex-1 px-6 py-3 bg-sci-cyan text-black font-bold text-sm tracking-widest uppercase hover:bg-white transition-colors duration-300 font-mono"
+                        >
+                            <span id="submitText">Submit Inquiry</span>
+                            <span id="submitLoading" class="hidden">TRANSMITTING...</span>
+                        </button>
+                        <button 
+                            type="button" 
+                            id="cancelBtn"
+                            class="px-6 py-3 border border-slate-700 bg-slate-900/50 text-white text-sm tracking-widest uppercase hover:border-slate-600 transition-colors duration-300 font-mono"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+
+                    <!-- Success/Error Messages -->
+                    <div id="formMessage" class="hidden mt-4 p-4 border font-mono text-sm">
+                        <span id="formMessageText"></span>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Form JavaScript -->
+    <script>
+        // Modal Controls
+        const contactBtn = document.getElementById('contactBtn');
+        const contactBtnFooter = document.getElementById('contactBtnFooter');
+        const contactModal = document.getElementById('contactModal');
+        const closeModal = document.getElementById('closeModal');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const contactForm = document.getElementById('contactForm');
+        const submitText = document.getElementById('submitText');
+        const submitLoading = document.getElementById('submitLoading');
+        const formMessage = document.getElementById('formMessage');
+        const formMessageText = document.getElementById('formMessageText');
+
+        // Function to open modal
+        const openModal = () => {
+            contactModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        };
+
+        // Open modal from header button
+        contactBtn.addEventListener('click', openModal);
+        
+        // Open modal from footer button
+        if (contactBtnFooter) {
+            contactBtnFooter.addEventListener('click', openModal);
+        }
+
+        // Close modal
+        const closeModalFunc = () => {
+            contactModal.classList.remove('active');
+            document.body.style.overflow = '';
+            contactForm.reset();
+            formMessage.classList.add('hidden');
+        };
+
+        closeModal.addEventListener('click', closeModalFunc);
+        cancelBtn.addEventListener('click', closeModalFunc);
+
+        // Close on overlay click
+        contactModal.addEventListener('click', (e) => {
+            if (e.target === contactModal) {
+                closeModalFunc();
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && contactModal.classList.contains('active')) {
+                closeModalFunc();
+            }
+        });
+
+        // Form Submission
+        contactForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Show loading state
+            submitText.classList.add('hidden');
+            submitLoading.classList.remove('hidden');
+            formMessage.classList.add('hidden');
+
+            const formData = {
+                name: document.getElementById('name').value,
+                company: document.getElementById('company').value,
+                role: document.getElementById('role').value,
+                email: document.getElementById('email').value,
+                message: document.getElementById('message').value
+            };
+
+            try {
+                const response = await fetch('/api/contact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Success
+                    formMessage.classList.remove('hidden');
+                    formMessage.classList.remove('border-sci-ember', 'bg-sci-ember/10', 'text-sci-ember');
+                    formMessage.classList.add('border-sci-cyan', 'bg-sci-cyan/10', 'text-sci-cyan');
+                    formMessageText.textContent = '✓ MESSAGE TRANSMITTED SUCCESSFULLY. We will respond shortly.';
+                    contactForm.reset();
+                    
+                    // Close modal after 2 seconds
+                    setTimeout(() => {
+                        closeModalFunc();
+                    }, 2000);
+                } else {
+                    // Error
+                    throw new Error(result.error || 'Failed to send message');
+                }
+            } catch (error) {
+                // Show error message
+                formMessage.classList.remove('hidden');
+                formMessage.classList.remove('border-sci-cyan', 'bg-sci-cyan/10', 'text-sci-cyan');
+                formMessage.classList.add('border-sci-ember', 'bg-sci-ember/10', 'text-sci-ember');
+                formMessageText.textContent = `⚠ ERROR: ${error.message}. Please try again or contact mark@fureanimaging.com directly.`;
+            } finally {
+                // Reset button state
+                submitText.classList.remove('hidden');
+                submitLoading.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
