@@ -380,9 +380,9 @@
                     <div>
                         <h4 class="text-white text-sm font-bold mb-4 uppercase tracking-widest">Platform</h4>
                         <ul class="space-y-2 text-xs font-mono text-sci-dim">
-                            <li><a href="platform.html#hardware" class="hover:text-sci-cyan transition">Hardware</a></li>
-                            <li><a href="platform.html#software" class="hover:text-sci-cyan transition">Software</a></li>
-                            <li><a href="platform.html#ar" class="hover:text-sci-cyan transition">Augmented Reality</a></li>
+                            <li><a href="platform.html#pillars" class="hover:text-sci-cyan transition">Three Pillars</a></li>
+                            <li><a href="platform.html#ai-core" class="hover:text-sci-cyan transition">AI Core</a></li>
+                            <li><a href="platform.html#dashboard" class="hover:text-sci-cyan transition">Incandescence</a></li>
                         </ul>
                     </div>
                     <div>
@@ -405,64 +405,80 @@
     <script>
         const initCanvas = () => {
             const container = document.getElementById('canvas-container');
-            const scene = new THREE.Scene();
-            
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            container.appendChild(renderer.domElement);
+            if (!container) return;
 
-            const particlesGeometry = new THREE.BufferGeometry();
-            const particlesCount = 300; 
-            
-            const posArray = new Float32Array(particlesCount * 3);
-            
-            for(let i = 0; i < particlesCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 15;
+            const isMobile = window.matchMedia('(max-width: 767px)').matches;
+            if (isMobile || typeof THREE === 'undefined') {
+                container.style.display = 'none';
+                return;
             }
 
-            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            try {
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({
+                    alpha: true,
+                    antialias: false,
+                    powerPreference: 'low-power'
+                });
 
-            const material = new THREE.PointsMaterial({
-                size: 0.03,
-                color: 0x06b6d4, 
-                transparent: true,
-                opacity: 0.4,
-            });
-            
-            const particlesMesh = new THREE.Points(particlesGeometry, material);
-            scene.add(particlesMesh);
-
-            camera.position.z = 3;
-
-            let mouseX = 0;
-            let mouseY = 0;
-
-            document.addEventListener('mousemove', (event) => {
-                mouseX = event.clientX / window.innerWidth - 0.5;
-                mouseY = event.clientY / window.innerHeight - 0.5;
-            });
-
-            const animate = () => {
-                requestAnimationFrame(animate);
-                particlesMesh.rotation.y += 0.0005;
-                particlesMesh.rotation.x += 0.0002;
-                particlesMesh.rotation.y += mouseX * 0.01;
-                particlesMesh.rotation.x += mouseY * 0.01;
-                renderer.render(scene, camera);
-            };
-
-            animate();
-
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
                 renderer.setSize(window.innerWidth, window.innerHeight);
-            });
+                container.appendChild(renderer.domElement);
+
+                const particlesGeometry = new THREE.BufferGeometry();
+                const particlesCount = 180;
+                const posArray = new Float32Array(particlesCount * 3);
+
+                for (let i = 0; i < particlesCount * 3; i++) {
+                    posArray[i] = (Math.random() - 0.5) * 15;
+                }
+
+                particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+                const material = new THREE.PointsMaterial({
+                    size: 0.03,
+                    color: 0x06b6d4,
+                    transparent: true,
+                    opacity: 0.35
+                });
+
+                const particlesMesh = new THREE.Points(particlesGeometry, material);
+                scene.add(particlesMesh);
+                camera.position.z = 3;
+
+                let mouseX = 0;
+                let mouseY = 0;
+
+                document.addEventListener('mousemove', (event) => {
+                    mouseX = event.clientX / window.innerWidth - 0.5;
+                    mouseY = event.clientY / window.innerHeight - 0.5;
+                });
+
+                const animate = () => {
+                    requestAnimationFrame(animate);
+                    particlesMesh.rotation.y += 0.0005;
+                    particlesMesh.rotation.x += 0.0002;
+                    particlesMesh.rotation.y += mouseX * 0.01;
+                    particlesMesh.rotation.x += mouseY * 0.01;
+                    renderer.render(scene, camera);
+                };
+
+                animate();
+
+                window.addEventListener('resize', () => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+            } catch (error) {
+                container.style.display = 'none';
+                console.warn('Canvas background disabled:', error);
+            }
         };
 
-        window.onload = initCanvas;
+        window.addEventListener('load', initCanvas);
     </script>
 
     <!-- Investor Form JavaScript -->

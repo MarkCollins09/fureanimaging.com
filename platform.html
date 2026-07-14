@@ -38,6 +38,12 @@
         .text-glow { text-shadow: 0 0 10px rgba(6, 182, 212, 0.5); }
         .text-glow-ember { text-shadow: 0 0 10px rgba(249, 115, 22, 0.5); }
         .border-glow { box-shadow: 0 0 15px -3px rgba(6, 182, 212, 0.15); }
+        .glow-ring {
+            box-shadow:
+                0 0 0 1px rgba(6, 182, 212, 0.35),
+                0 0 40px -8px rgba(6, 182, 212, 0.45),
+                inset 0 0 60px -20px rgba(6, 182, 212, 0.12);
+        }
         
         .scanlines {
             background: linear-gradient(
@@ -58,6 +64,8 @@
             height: 20px;
             border: 1px solid #06b6d4;
             transition: all 0.3s ease;
+            z-index: 2;
+            pointer-events: none;
         }
         .hud-tl { top: 0; left: 0; border-right: none; border-bottom: none; }
         .hud-tr { top: 0; right: 0; border-left: none; border-bottom: none; }
@@ -71,6 +79,52 @@
             transform: translateY(20px);
         }
         @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+
+        /* Bento interactive panels */
+        .bento-card {
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s ease, box-shadow 0.35s ease;
+        }
+        .bento-card:hover {
+            transform: translateY(-4px) scale(1.01);
+            border-color: rgba(6, 182, 212, 0.55);
+            box-shadow: 0 0 30px -8px rgba(6, 182, 212, 0.35);
+        }
+        .bento-card:hover .hud-corner {
+            width: 28px;
+            height: 28px;
+        }
+        .bento-detail {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease, margin-top 0.35s ease;
+        }
+        .bento-card:hover .bento-detail,
+        .bento-card:focus-within .bento-detail {
+            max-height: 220px;
+            opacity: 1;
+            margin-top: 1rem;
+        }
+        .bento-card:hover .bento-hint {
+            opacity: 0;
+        }
+        .bento-hint {
+            transition: opacity 0.3s ease;
+        }
+
+        .pillar-card {
+            transition: border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+        }
+        .pillar-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 28px -10px rgba(6, 182, 212, 0.3);
+        }
+        .pillar-card:hover .hud-corner {
+            width: 26px;
+            height: 26px;
+        }
         
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #020617; }
@@ -90,7 +144,6 @@
     <nav class="fixed w-full z-50 border-b border-slate-800 bg-sci-base/90 backdrop-blur-md">
         <div class="max-w-7xl mx-auto px-6 h-24 flex justify-between items-center">
             
-            <!-- Branding -->
             <a href="index.html" class="flex items-center gap-4 group cursor-pointer">
                 <div class="relative w-14 h-14 transition-transform group-hover:scale-105">
                      <img src="Furean Crest.png" alt="Furean Crest" class="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(6,182,212,0.3)]">
@@ -102,8 +155,9 @@
             </a>
             
             <div class="hidden md:flex items-center space-x-8">
-                <a href="index.html#problem" class="text-xs font-mono text-sci-dim hover:text-sci-ember transition-colors tracking-widest uppercase">The Critical Gap</a>
-                <a href="index.html#tech" class="text-xs font-mono text-sci-dim hover:text-sci-cyan transition-colors tracking-widest uppercase">Ecosystem</a>
+                <a href="#pillars" class="text-xs font-mono text-sci-dim hover:text-sci-cyan transition-colors tracking-widest uppercase">Pillars</a>
+                <a href="#ai-core" class="text-xs font-mono text-sci-dim hover:text-sci-cyan transition-colors tracking-widest uppercase">AI Core</a>
+                <a href="#dashboard" class="text-xs font-mono text-sci-dim hover:text-sci-cyan transition-colors tracking-widest uppercase">Dashboard</a>
                 
                 <a href="index.html" class="px-5 py-2 border border-slate-700 bg-slate-900/50 hover:bg-sci-cyan/10 hover:border-sci-cyan text-xs font-mono text-white transition-all duration-300 uppercase tracking-wider group">
                     <span class="group-hover:text-sci-cyan">Request Information</span>
@@ -113,242 +167,267 @@
     </nav>
 
     <!-- Hero Section -->
-    <section class="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
+    <section class="relative min-h-[70vh] flex items-center justify-center pt-20 overflow-hidden">
         <div class="absolute inset-0 bg-grid-pattern bg-[length:50px_50px] opacity-[0.03]"></div>
         
         <div class="relative z-10 max-w-5xl mx-auto px-6 text-center">
             <div class="reveal-up inline-flex items-center gap-3 px-4 py-2 border border-sci-cyan/20 bg-sci-cyan/5 rounded-full mb-8 backdrop-blur-sm">
                 <span class="w-1.5 h-1.5 bg-sci-cyan rounded-full animate-pulse"></span>
-                <span class="font-mono text-[10px] text-sci-cyan tracking-widest uppercase">PLATFORM // INTEGRATED SYSTEM</span>
+                <span class="font-mono text-[10px] text-sci-cyan tracking-widest uppercase">System Architecture // Neurosynergistics</span>
             </div>
 
-            <h1 class="reveal-up text-5xl md:text-7xl lg:text-8xl font-bold text-white tracking-tight mb-8 leading-tight font-sans">
-                THE FUREAN <br />
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-sci-cyan to-blue-600 text-glow">PLATFORM</span>
+            <h1 class="reveal-up text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-8 leading-tight font-sans">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-sci-cyan to-blue-600 text-glow">NEUROSYNERGISTICS</span>
             </h1>
 
             <p class="reveal-up text-lg md:text-xl text-sci-dim max-w-2xl mx-auto font-light leading-relaxed mb-10" style="animation-delay: 0.2s;">
-                A complete ecosystem of hardware, software, and augmented reality systems designed from the ground up for industrial safety. 
-                <span class="text-white">No compromises. No repackaged solutions.</span>
+                Perception. Context. Visualization.
+                <span class="text-white"> Three pillars. One neural core. Total operational synthesis.</span>
             </p>
         </div>
     </section>
 
-    <!-- Hardware Section -->
-    <section id="hardware" class="py-32 relative bg-sci-panel/30 border-y border-slate-900">
+    <!-- Section 1: The Three Pillars -->
+    <section id="pillars" class="py-24 md:py-32 relative bg-sci-panel/30 border-y border-slate-900">
         <div class="max-w-7xl mx-auto px-6">
-            <div class="mb-16">
-                <h2 class="text-sci-cyan font-mono text-xs tracking-[0.3em] mb-4">SECTION 01 // HARDWARE</h2>
-                <h3 class="text-4xl text-white font-bold font-serif mb-6">Hardware Stack</h3>
-                <p class="text-sci-dim text-lg max-w-3xl">
-                    Purpose-built hardware engineered to meet the most demanding industrial environments. Every component is designed for reliability, precision, and rapid deployment.
+            <div class="mb-16 flex flex-col md:flex-row md:items-end md:justify-between gap-6 border-b border-slate-800 pb-8">
+                <div>
+                    <h2 class="text-sci-cyan font-mono text-xs tracking-[0.3em] mb-4">PIPELINE // 01</h2>
+                    <h3 class="text-4xl text-white font-bold font-serif">The Three Pillars</h3>
+                </div>
+                <p class="font-mono text-xs text-sci-dim md:text-right max-w-sm">
+                    DATA LAKE → CONTEXTUAL ENGINE → TACTICAL EDGE
                 </p>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Hyperspectral LiDAR -->
-                <div class="relative group p-8 bg-slate-900/50 border border-slate-800 hover:border-sci-cyan/50 transition duration-500">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+                
+                <!-- 01 Perception -->
+                <div class="pillar-card relative group p-8 bg-slate-900/50 border border-slate-800 hover:border-sci-cyan/50">
                     <div class="hud-corner hud-tl"></div>
+                    <div class="hud-corner hud-tr"></div>
+                    <div class="hud-corner hud-bl"></div>
                     <div class="hud-corner hud-br"></div>
                     
-                    <div class="font-mono text-sci-cyan text-xs mb-2">01 // SENSOR</div>
-                    <h4 class="text-2xl text-white font-bold mb-4">Next-Generation Hyperspectral LiDAR</h4>
-                    <p class="text-sci-dim text-sm leading-relaxed mb-4">
-                        Our advanced hyperspectral LiDAR fusion technology combines time-of-flight depth mapping with spectral gas analysis, utilizing Photonic-Crystal Surface-Emitting Lasers (PCSEL) to penetrate obscurants and provide true volumetric hazard detection.
+                    <div class="font-mono text-sci-cyan text-xs mb-3 tracking-widest">01 // PERCEPTION</div>
+                    <div class="text-[10px] font-mono text-sci-dim uppercase tracking-[0.2em] mb-4">The Data Lake</div>
+                    <h4 class="text-2xl text-white font-bold mb-4 leading-snug">Multi-Modal Data Acquisition</h4>
+                    <p class="text-sci-dim text-sm leading-relaxed">
+                        Our hardware ecosystem is designed to build a deep, broad, and flawless data lake. By fusing Hyperspectral LiDAR, Event Sensors, SPAD arrays, THz Sensors, and continuous NDT integration, Furean systems capture quadrillions of data points per second. Paired with third-party hardware agnostic integration, we eliminate blind spots across the entire operational footprint.
                     </p>
-                    <div class="flex flex-wrap gap-2 mt-4">
-                        <span class="px-2 py-1 border border-slate-700 text-[10px] text-white font-mono uppercase">950NM Wavelength</span>
-                        <span class="px-2 py-1 border border-slate-700 text-[10px] text-white font-mono uppercase">PCSEL Array</span>
-                    </div>
                 </div>
 
-                <!-- Standards Compliance -->
-                <div class="relative group p-8 bg-slate-900/50 border border-slate-800 hover:border-sci-cyan/50 transition duration-500">
+                <!-- 02 Contextual -->
+                <div class="pillar-card relative group p-8 bg-slate-900/50 border border-slate-800 hover:border-sci-cyan/50">
                     <div class="hud-corner hud-tl"></div>
+                    <div class="hud-corner hud-tr"></div>
+                    <div class="hud-corner hud-bl"></div>
                     <div class="hud-corner hud-br"></div>
                     
-                    <div class="font-mono text-sci-cyan text-xs mb-2">02 // STANDARDS</div>
-                    <h4 class="text-2xl text-white font-bold mb-4">IP69K & Class 1 Div 1</h4>
-                    <p class="text-sci-dim text-sm leading-relaxed mb-4">
-                        Built to the highest industrial standards. Our hardware meets IP69K ingress protection for extreme environments and Class 1 Division 1 certification for hazardous locations. Constructed from 316L stainless steel for maximum durability and corrosion resistance.
+                    <div class="font-mono text-sci-cyan text-xs mb-3 tracking-widest">02 // CONTEXTUAL</div>
+                    <div class="text-[10px] font-mono text-sci-dim uppercase tracking-[0.2em] mb-4">The Engine</div>
+                    <h4 class="text-2xl text-white font-bold mb-4 leading-snug">The Incandescence Software Suite</h4>
+                    <p class="text-sci-dim text-sm leading-relaxed">
+                        Data without context is noise. Incandescence is our proprietary contextual engine that ingests, analyzes, and structures massive data lakes in real time. It translates raw site telemetry into a cohesive, interactive 3D digital twin—providing forensic-level oversight of personnel, equipment, and structural health.
                     </p>
-                    <div class="flex flex-wrap gap-2 mt-4">
-                        <span class="px-2 py-1 border border-slate-700 text-[10px] text-white font-mono uppercase">IP69K Rated</span>
-                        <span class="px-2 py-1 border border-slate-700 text-[10px] text-white font-mono uppercase">Class 1 Div 1</span>
-                        <span class="px-2 py-1 border border-slate-700 text-[10px] text-white font-mono uppercase">316L SS</span>
-                    </div>
                 </div>
 
-                <!-- Mobile C3 -->
-                <div class="relative group p-8 bg-slate-900/50 border border-slate-800 hover:border-sci-cyan/50 transition duration-500">
+                <!-- 03 Visualization -->
+                <div class="pillar-card relative group p-8 bg-slate-900/50 border border-slate-800 hover:border-sci-cyan/50">
                     <div class="hud-corner hud-tl"></div>
+                    <div class="hud-corner hud-tr"></div>
+                    <div class="hud-corner hud-bl"></div>
                     <div class="hud-corner hud-br"></div>
                     
-                    <div class="font-mono text-sci-cyan text-xs mb-2">03 // DEPLOYMENT</div>
-                    <h4 class="text-2xl text-white font-bold mb-4">Mobile Command & Control</h4>
-                    <p class="text-sci-dim text-sm leading-relaxed mb-4">
-                        A blast-resistant mobile data center enabling rapid deployment to any site. The NFPA 496 pressurized environment houses liquid-cooled AI racks processing 400Gbps of live telemetry, providing real-time situational awareness from anywhere.
+                    <div class="font-mono text-sci-cyan text-xs mb-3 tracking-widest">03 // VISUALIZATION</div>
+                    <div class="text-[10px] font-mono text-sci-dim uppercase tracking-[0.2em] mb-4">The Edge</div>
+                    <h4 class="text-2xl text-white font-bold mb-4 leading-snug">Tactical Field Operations</h4>
+                    <p class="text-sci-dim text-sm leading-relaxed">
+                        Delivering the right data to the right place. From ruggedized field tablets for planning to custom-built industrial Augmented Reality platforms. Operators can view live NDT overlays, exact indication depths, and metallurgy data directly in their field of view—effectively allowing them to see through walls and visualize hazards before they are encountered.
                     </p>
-                    <div class="flex flex-wrap gap-2 mt-4">
-                        <span class="px-2 py-1 border border-slate-700 text-[10px] text-white font-mono uppercase">Blast Resistant</span>
-                        <span class="px-2 py-1 border border-slate-700 text-[10px] text-white font-mono uppercase">Liquid Cooled</span>
-                        <span class="px-2 py-1 border border-slate-700 text-[10px] text-white font-mono uppercase">400Gbps</span>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 2: The AI Core -->
+    <section id="ai-core" class="py-24 md:py-32 relative">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="relative glow-ring border border-sci-cyan/40 bg-gradient-to-br from-sci-cyan/10 via-sci-panel/80 to-sci-base p-8 md:p-14 overflow-hidden">
+                <div class="absolute inset-0 scanlines opacity-30"></div>
+                <div class="absolute inset-0 bg-grid-pattern bg-[length:40px_40px] opacity-[0.06]"></div>
+                
+                <div class="hud-corner hud-tl" style="width:28px;height:28px;"></div>
+                <div class="hud-corner hud-tr" style="width:28px;height:28px;"></div>
+                <div class="hud-corner hud-bl" style="width:28px;height:28px;"></div>
+                <div class="hud-corner hud-br" style="width:28px;height:28px;"></div>
+
+                <div class="relative z-10 max-w-3xl">
+                    <div class="inline-flex items-center gap-3 px-3 py-1.5 border border-sci-cyan/30 bg-sci-cyan/10 mb-6">
+                        <span class="w-1.5 h-1.5 bg-sci-cyan rounded-full animate-pulse"></span>
+                        <span class="font-mono text-[10px] text-sci-cyan tracking-[0.25em] uppercase">Ground-Up Neural Architecture</span>
                     </div>
+                    <h3 class="text-3xl md:text-5xl text-white font-bold font-serif mb-6 leading-tight text-glow">
+                        Built for Industry, Not Adapted For It.
+                    </h3>
+                    <p class="text-sci-dim text-base md:text-lg leading-relaxed">
+                        We do not bolt third-party AI onto legacy systems. The Furean ecosystem is engineered from the silicon up to leverage a custom-built neural network. Designed specifically to ingest, organize, and analyze quadrillions of industrial data points, our AI acts as the central nervous system for your entire site operation.
+                    </p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Software Section -->
-    <section id="software" class="py-32 relative">
+    <!-- Section 3: The Incandescence Dashboard -->
+    <section id="dashboard" class="py-24 md:py-32 relative bg-sci-panel/30 border-y border-slate-900">
         <div class="max-w-7xl mx-auto px-6">
-            <div class="mb-16">
-                <h2 class="text-sci-cyan font-mono text-xs tracking-[0.3em] mb-4">SECTION 02 // SOFTWARE</h2>
-                <h3 class="text-4xl text-white font-bold font-serif mb-6">Custom Software Stack</h3>
-                <p class="text-sci-dim text-lg max-w-3xl mb-8">
-                    Unlike our competitors who repackage software designed for other applications, Furean's software stack is built from the ground up specifically for industrial safety and hazard visualization.
-                </p>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                <!-- Custom Development -->
-                <div class="relative p-8 bg-slate-900/50 border border-slate-800">
-                    <div class="hud-corner hud-tl"></div>
-                    <div class="hud-corner hud-br"></div>
-                    
-                    <div class="font-mono text-sci-cyan text-xs mb-2">PURPOSE-BUILT</div>
-                    <h4 class="text-2xl text-white font-bold mb-4">Built for Industrial Safety</h4>
-                    <p class="text-sci-dim text-sm leading-relaxed mb-4">
-                        Our software is not adapted from gaming engines, CAD tools, or general-purpose visualization platforms. Every line of code is written with industrial safety operations in mind, ensuring optimal performance, reliability, and integration with safety protocols.
-                    </p>
-                    <ul class="space-y-2 text-sci-dim text-sm font-mono">
-                        <li class="flex items-start gap-2">
-                            <span class="text-sci-cyan">►</span>
-                            <span>Real-time hazard detection algorithms</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-sci-cyan">►</span>
-                            <span>Industrial protocol integration</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-sci-cyan">►</span>
-                            <span>Safety-compliant data handling</span>
-                        </li>
-                    </ul>
+            <div class="mb-16 flex flex-col md:flex-row md:items-end md:justify-between gap-6 border-b border-slate-800 pb-8">
+                <div>
+                    <h2 class="text-sci-cyan font-mono text-xs tracking-[0.3em] mb-4">SUITE // INCANDESCENCE</h2>
+                    <h3 class="text-4xl text-white font-bold font-serif">The Incandescence Dashboard</h3>
                 </div>
-
-                <!-- Key Features -->
-                <div class="relative p-8 bg-slate-900/50 border border-slate-800">
-                    <div class="hud-corner hud-tl"></div>
-                    <div class="hud-corner hud-br"></div>
-                    
-                    <div class="font-mono text-sci-cyan text-xs mb-2">CAPABILITIES</div>
-                    <h4 class="text-2xl text-white font-bold mb-4">Advanced Processing</h4>
-                    <p class="text-sci-dim text-sm leading-relaxed mb-4">
-                        Our custom software stack enables capabilities that repackaged solutions simply cannot deliver, including volumetric analysis, multi-sensor fusion, and real-time decision support systems.
-                    </p>
-                    <ul class="space-y-2 text-sci-dim text-sm font-mono">
-                        <li class="flex items-start gap-2">
-                            <span class="text-sci-cyan">►</span>
-                            <span>Volumetric gas cloud mapping</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-sci-cyan">►</span>
-                            <span>Multi-sensor data fusion</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-sci-cyan">►</span>
-                            <span>AI-powered threat assessment</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-sci-cyan">►</span>
-                            <span>Zero-latency visualization</span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Comparison Note -->
-            <div class="mt-12 p-6 border-l-2 border-sci-ember bg-sci-ember/5">
-                <div class="font-mono text-sci-ember text-xs mb-2 uppercase">DIFFERENTIATOR</div>
-                <p class="text-white text-sm leading-relaxed">
-                    <strong>Not repackaged software.</strong> While competitors adapt tools built for other industries, Furean's software is purpose-engineered for industrial safety from day one. This means better performance, tighter integration, and solutions that actually address the unique challenges of hazardous industrial environments.
-                </p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Augmented Reality Section -->
-    <section id="ar" class="py-32 relative bg-sci-panel/30 border-y border-slate-900">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="mb-16">
-                <h2 class="text-sci-cyan font-mono text-xs tracking-[0.3em] mb-4">SECTION 03 // AUGMENTED REALITY</h2>
-                <h3 class="text-4xl text-white font-bold font-serif mb-6">Military-Grade Vision Systems</h3>
-                <p class="text-sci-dim text-lg max-w-3xl">
-                    Bringing battlefield-proven augmented reality technology to industrial environments. Our vision systems provide real-time, world-locked data overlays that enhance situational awareness without compromising safety.
+                <p class="font-mono text-xs text-sci-dim md:text-right max-w-xs">
+                    HOVER PANELS TO EXPAND DETAIL<br>
+                    6 MODULES // TACTICAL OVERSIGHT
                 </p>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                <!-- AR Overview -->
-                <div class="relative p-8 bg-slate-900/50 border border-slate-800">
+            <!-- Bento Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4 md:gap-5 auto-rows-fr">
+
+                <!-- Panel 1: Global 3D — wide -->
+                <article tabindex="0" class="bento-card xl:col-span-4 relative p-7 md:p-8 bg-slate-900/60 border border-slate-800 min-h-[220px] flex flex-col justify-between cursor-crosshair">
+                    <div class="absolute inset-0 z-0">
+                        <img src="3D Viewer Tech DemoSS.png" class="w-full h-full object-cover opacity-35 transition duration-700 group-hover:scale-105 group-hover:opacity-50" alt="Global 3D Operations Viewer">
+                        <div class="absolute inset-0 bg-gradient-to-r from-sci-base via-sci-base/75 to-sci-base/40"></div>
+                    </div>
                     <div class="hud-corner hud-tl"></div>
+                    <div class="hud-corner hud-tr"></div>
+                    <div class="hud-corner hud-bl"></div>
                     <div class="hud-corner hud-br"></div>
-                    
-                    <div class="font-mono text-sci-cyan text-xs mb-2">VISION SYSTEM</div>
-                    <h4 class="text-2xl text-white font-bold mb-4">Heads-Up Display</h4>
-                    <p class="text-sci-dim text-sm leading-relaxed mb-4">
-                        Our augmented reality systems integrate seamlessly with SCBA visors and industrial safety equipment, providing zero-latency overlays of hazard data, personnel tracking, and environmental conditions directly in the operator's field of view.
-                    </p>
-                    <div class="space-y-3 mt-6">
-                        <div class="flex items-center gap-3">
-                            <span class="text-sci-cyan font-mono text-xs">►</span>
-                            <span class="text-sci-dim text-sm">World-locked data visualization</span>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <span class="text-sci-cyan font-mono text-xs">►</span>
-                            <span class="text-sci-dim text-sm">Hands-free interaction</span>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <span class="text-sci-cyan font-mono text-xs">►</span>
-                            <span class="text-sci-dim text-sm">SCBA visor integration</span>
+                    <div class="relative z-10">
+                        <div class="font-mono text-sci-cyan text-[10px] tracking-widest uppercase mb-2">01 // LIVE SITE OVERSIGHT</div>
+                        <h4 class="text-xl md:text-2xl text-white font-bold mb-1">Global 3D Operations Viewer</h4>
+                        <p class="bento-hint text-xs font-mono text-sci-dim mt-2">HOVER TO EXPAND</p>
+                        <div class="bento-detail">
+                            <p class="text-sci-dim text-sm leading-relaxed">
+                                Complete 3D visualization of site operations. Track worker movements, confined space entries, active crane lifts, and dynamic exclusion zones. Click any asset to instantly retrieve associated personnel data, active permits, and operational history.
+                            </p>
                         </div>
                     </div>
-                </div>
+                </article>
 
-                <!-- AR Features -->
-                <div class="relative p-8 bg-slate-900/50 border border-slate-800">
+                <!-- Panel 2: DCSM -->
+                <article tabindex="0" class="bento-card xl:col-span-2 relative p-7 md:p-8 bg-slate-900/60 border border-slate-800 min-h-[220px] flex flex-col justify-between cursor-crosshair">
+                    <div class="absolute inset-0 z-0">
+                        <img src="DCSM Tech DemoSS.png" class="w-full h-full object-cover opacity-35 transition duration-700 group-hover:scale-105 group-hover:opacity-50" alt="DCSM Dashboard">
+                        <div class="absolute inset-0 bg-gradient-to-t from-sci-base via-sci-base/75 to-sci-base/40"></div>
+                    </div>
                     <div class="hud-corner hud-tl"></div>
+                    <div class="hud-corner hud-tr"></div>
+                    <div class="hud-corner hud-bl"></div>
                     <div class="hud-corner hud-br"></div>
-                    
-                    <div class="font-mono text-sci-cyan text-xs mb-2">CAPABILITIES</div>
-                    <h4 class="text-2xl text-white font-bold mb-4">Industrial AR Features</h4>
-                    <p class="text-sci-dim text-sm leading-relaxed mb-4">
-                        Custom built augmented reality safety glasses bring an unprecedented level of situational awareness to industrial sites. Allowing operators, foreman, and rescuers deeper insights into operational conditions.
-                    </p>
-                    <div class="space-y-3 mt-6">
-                        <div class="flex items-center gap-3">
-                            <span class="text-sci-cyan font-mono text-xs">►</span>
-                            <span class="text-sci-dim text-sm">HUD shows up to live insights into atmospheric conditions</span>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <span class="text-sci-cyan font-mono text-xs">►</span>
-                            <span class="text-sci-dim text-sm">Custom software package allows instant calibration for individual operators</span>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <span class="text-sci-cyan font-mono text-xs">►</span>
-                            <span class="text-sci-dim text-sm">Sensor fusion allows operators to "see" through walls.</span>
+                    <div class="relative z-10">
+                        <div class="font-mono text-sci-ember text-[10px] tracking-widest uppercase mb-2">02 // DIGITAL CONFINED SPACE MONITORING</div>
+                        <h4 class="text-xl text-white font-bold mb-1">DCSM Dashboard</h4>
+                        <p class="bento-hint text-xs font-mono text-sci-dim mt-2">HOVER TO EXPAND</p>
+                        <div class="bento-detail">
+                            <p class="text-sci-dim text-sm leading-relaxed">
+                                Absolute oversight for high-risk environments. Live video feeds paired with volumetric gas detection, structural deformation tracking, and active corrosion monitoring. Includes comprehensive event logging and incident investigation tools.
+                            </p>
                         </div>
                     </div>
-                </div>
-            </div>
+                </article>
 
-            <!-- AR Note -->
-            <div class="mt-12 p-6 border-l-2 border-sci-cyan bg-sci-cyan/5">
-                <div class="font-mono text-sci-cyan text-xs mb-2 uppercase">MILITARY-GRADE TECHNOLOGY</div>
-                <p class="text-white text-sm leading-relaxed">
-                    The same augmented reality systems trusted by military operators in high-stakes environments are now adapted for industrial safety. This isn't consumer AR—it's mission-critical technology that has been proven under the most demanding conditions.
-                </p>
+                <!-- Panel 3: Deep Analytics -->
+                <article tabindex="0" class="bento-card xl:col-span-2 relative p-7 md:p-8 bg-slate-900/60 border border-slate-800 min-h-[220px] flex flex-col justify-between cursor-crosshair">
+                    <div class="absolute inset-0 z-0">
+                        <img src="Deep Analytics Tech DemoSS.png" class="w-full h-full object-cover opacity-35 transition duration-700 group-hover:scale-105 group-hover:opacity-50" alt="Deep Analytics Engine">
+                        <div class="absolute inset-0 bg-gradient-to-t from-sci-base via-sci-base/75 to-sci-base/40"></div>
+                    </div>
+                    <div class="hud-corner hud-tl"></div>
+                    <div class="hud-corner hud-tr"></div>
+                    <div class="hud-corner hud-bl"></div>
+                    <div class="hud-corner hud-br"></div>
+                    <div class="relative z-10">
+                        <div class="font-mono text-sci-cyan text-[10px] tracking-widest uppercase mb-2">03 // FORENSIC SITE INTELLIGENCE</div>
+                        <h4 class="text-xl text-white font-bold mb-1">Deep Analytics Engine</h4>
+                        <p class="bento-hint text-xs font-mono text-sci-dim mt-2">HOVER TO EXPAND</p>
+                        <div class="bento-detail">
+                            <p class="text-sci-dim text-sm leading-relaxed">
+                                The true value center. Conduct forward and regressive analysis on structural health, job history, and environmental atmospherics. Build custom comparative charts, automate compliance reporting, and execute deep-dives into NDT results.
+                            </p>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Panel 4: Document Control — wide -->
+                <article tabindex="0" class="bento-card xl:col-span-4 relative p-7 md:p-8 bg-slate-900/60 border border-slate-800 min-h-[220px] flex flex-col justify-between cursor-crosshair">
+                    <div class="absolute inset-0 z-0">
+                        <img src="Document Control Tech DemoSS.png" class="w-full h-full object-cover opacity-35 transition duration-700 group-hover:scale-105 group-hover:opacity-50" alt="Document Control Centre">
+                        <div class="absolute inset-0 bg-gradient-to-r from-sci-base via-sci-base/75 to-sci-base/40"></div>
+                    </div>
+                    <div class="hud-corner hud-tl"></div>
+                    <div class="hud-corner hud-tr"></div>
+                    <div class="hud-corner hud-bl"></div>
+                    <div class="hud-corner hud-br"></div>
+                    <div class="relative z-10">
+                        <div class="font-mono text-sci-cyan text-[10px] tracking-widest uppercase mb-2">04 // AUTOMATED COMPLIANCE</div>
+                        <h4 class="text-xl md:text-2xl text-white font-bold mb-1">Document Control Centre</h4>
+                        <p class="bento-hint text-xs font-mono text-sci-dim mt-2">HOVER TO EXPAND</p>
+                        <div class="bento-detail">
+                            <p class="text-sci-dim text-sm leading-relaxed">
+                                A unified repository for all site documentation. The system automatically ingests and matches JSAs, lift plans, and permits to their specific jobs and physical locations in the 3D viewer. Streamline audits and guarantee operational due diligence.
+                            </p>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Panel 5: Critical Path -->
+                <article tabindex="0" class="bento-card xl:col-span-3 relative p-7 md:p-8 bg-slate-900/60 border border-slate-800 min-h-[220px] flex flex-col justify-between cursor-crosshair">
+                    <div class="absolute inset-0 z-0">
+                        <img src="Ops Schedule and Critical Path Tech DemoSS.png" class="w-full h-full object-cover opacity-35 transition duration-700 group-hover:scale-105 group-hover:opacity-50" alt="Critical Path and Scheduling">
+                        <div class="absolute inset-0 bg-gradient-to-t from-sci-base via-sci-base/75 to-sci-base/40"></div>
+                    </div>
+                    <div class="hud-corner hud-tl"></div>
+                    <div class="hud-corner hud-tr"></div>
+                    <div class="hud-corner hud-bl"></div>
+                    <div class="hud-corner hud-br"></div>
+                    <div class="relative z-10">
+                        <div class="font-mono text-sci-cyan text-[10px] tracking-widest uppercase mb-2">05 // TIMELINE VISUALIZATION</div>
+                        <h4 class="text-xl md:text-2xl text-white font-bold mb-1">Critical Path &amp; Scheduling</h4>
+                        <p class="bento-hint text-xs font-mono text-sci-dim mt-2">HOVER TO EXPAND</p>
+                        <div class="bento-detail">
+                            <p class="text-sci-dim text-sm leading-relaxed">
+                                Interface directly with your existing scheduling software. Visualize real-time progress against the critical path. Inspect active work, review completed milestones, and identify timeline bottlenecks before they occur.
+                            </p>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Panel 6: Fleet & System -->
+                <article tabindex="0" class="bento-card xl:col-span-3 relative p-7 md:p-8 bg-slate-900/60 border border-slate-800 min-h-[220px] flex flex-col justify-between cursor-crosshair">
+                    <div class="absolute inset-0 z-0">
+                        <img src="System Tools Tech DemoSS.png" class="w-full h-full object-cover opacity-35 transition duration-700 group-hover:scale-105 group-hover:opacity-50" alt="Fleet and System Manager">
+                        <div class="absolute inset-0 bg-gradient-to-t from-sci-base via-sci-base/75 to-sci-base/40"></div>
+                    </div>
+                    <div class="hud-corner hud-tl"></div>
+                    <div class="hud-corner hud-tr"></div>
+                    <div class="hud-corner hud-bl"></div>
+                    <div class="hud-corner hud-br"></div>
+                    <div class="relative z-10">
+                        <div class="font-mono text-sci-cyan text-[10px] tracking-widest uppercase mb-2">06 // HARDWARE TELEMETRY</div>
+                        <h4 class="text-xl md:text-2xl text-white font-bold mb-1">Fleet &amp; System Manager</h4>
+                        <p class="bento-hint text-xs font-mono text-sci-dim mt-2">HOVER TO EXPAND</p>
+                        <div class="bento-detail">
+                            <p class="text-sci-dim text-sm leading-relaxed">
+                                Complete command and control over deployed Furean hardware. Monitor device health, track physical locations in the field, assign equipment to specific jobs, and proactively manage maintenance cycles.
+                            </p>
+                        </div>
+                    </div>
+                </article>
+
             </div>
         </div>
     </section>
@@ -374,9 +453,9 @@
                     <div>
                         <h4 class="text-white text-sm font-bold mb-4 uppercase tracking-widest">Platform</h4>
                         <ul class="space-y-2 text-xs font-mono text-sci-dim">
-                            <li><a href="platform.html#hardware" class="hover:text-sci-cyan transition">Hardware</a></li>
-                            <li><a href="platform.html#software" class="hover:text-sci-cyan transition">Software</a></li>
-                            <li><a href="platform.html#ar" class="hover:text-sci-cyan transition">Augmented Reality</a></li>
+                            <li><a href="#pillars" class="hover:text-sci-cyan transition">Three Pillars</a></li>
+                            <li><a href="#ai-core" class="hover:text-sci-cyan transition">AI Core</a></li>
+                            <li><a href="#dashboard" class="hover:text-sci-cyan transition">Incandescence</a></li>
                         </ul>
                     </div>
                     <div>
@@ -399,65 +478,80 @@
     <script>
         const initCanvas = () => {
             const container = document.getElementById('canvas-container');
-            const scene = new THREE.Scene();
-            
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            container.appendChild(renderer.domElement);
+            if (!container) return;
 
-            const particlesGeometry = new THREE.BufferGeometry();
-            const particlesCount = 300; 
-            
-            const posArray = new Float32Array(particlesCount * 3);
-            
-            for(let i = 0; i < particlesCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 15;
+            const isMobile = window.matchMedia('(max-width: 767px)').matches;
+            if (isMobile || typeof THREE === 'undefined') {
+                container.style.display = 'none';
+                return;
             }
 
-            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            try {
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({
+                    alpha: true,
+                    antialias: false,
+                    powerPreference: 'low-power'
+                });
 
-            const material = new THREE.PointsMaterial({
-                size: 0.03,
-                color: 0x06b6d4, 
-                transparent: true,
-                opacity: 0.4,
-            });
-            
-            const particlesMesh = new THREE.Points(particlesGeometry, material);
-            scene.add(particlesMesh);
-
-            camera.position.z = 3;
-
-            let mouseX = 0;
-            let mouseY = 0;
-
-            document.addEventListener('mousemove', (event) => {
-                mouseX = event.clientX / window.innerWidth - 0.5;
-                mouseY = event.clientY / window.innerHeight - 0.5;
-            });
-
-            const animate = () => {
-                requestAnimationFrame(animate);
-                particlesMesh.rotation.y += 0.0005;
-                particlesMesh.rotation.x += 0.0002;
-                particlesMesh.rotation.y += mouseX * 0.01;
-                particlesMesh.rotation.x += mouseY * 0.01;
-                renderer.render(scene, camera);
-            };
-
-            animate();
-
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
                 renderer.setSize(window.innerWidth, window.innerHeight);
-            });
+                container.appendChild(renderer.domElement);
+
+                const particlesGeometry = new THREE.BufferGeometry();
+                const particlesCount = 180;
+                const posArray = new Float32Array(particlesCount * 3);
+
+                for (let i = 0; i < particlesCount * 3; i++) {
+                    posArray[i] = (Math.random() - 0.5) * 15;
+                }
+
+                particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+                const material = new THREE.PointsMaterial({
+                    size: 0.03,
+                    color: 0x06b6d4,
+                    transparent: true,
+                    opacity: 0.35
+                });
+
+                const particlesMesh = new THREE.Points(particlesGeometry, material);
+                scene.add(particlesMesh);
+                camera.position.z = 3;
+
+                let mouseX = 0;
+                let mouseY = 0;
+
+                document.addEventListener('mousemove', (event) => {
+                    mouseX = event.clientX / window.innerWidth - 0.5;
+                    mouseY = event.clientY / window.innerHeight - 0.5;
+                });
+
+                const animate = () => {
+                    requestAnimationFrame(animate);
+                    particlesMesh.rotation.y += 0.0005;
+                    particlesMesh.rotation.x += 0.0002;
+                    particlesMesh.rotation.y += mouseX * 0.01;
+                    particlesMesh.rotation.x += mouseY * 0.01;
+                    renderer.render(scene, camera);
+                };
+
+                animate();
+
+                window.addEventListener('resize', () => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+            } catch (error) {
+                container.style.display = 'none';
+                console.warn('Canvas background disabled:', error);
+            }
         };
 
-        window.onload = initCanvas;
+        window.addEventListener('load', initCanvas);
     </script>
 </body>
 </html>
-
